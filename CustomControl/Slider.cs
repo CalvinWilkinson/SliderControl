@@ -19,7 +19,7 @@ public class Slider : Control
 		AvaloniaProperty.Register<Slider, IBrush?>(nameof(Background), defaultValue: Brushes.Transparent);
 
 	public static readonly StyledProperty<double> MinValueProperty =
-		AvaloniaProperty.Register<Slider, double>(nameof(MinValue), defaultValue: 0.0);
+		AvaloniaProperty.Register<Slider, double>(nameof(MinValue), defaultValue: 123.123);
 
 	public static readonly StyledProperty<double> MaxValueProperty =
 		AvaloniaProperty.Register<Slider, double>(nameof(MaxValue), defaultValue: 100);
@@ -29,6 +29,8 @@ public class Slider : Control
 
 	public static readonly StyledProperty<double> RangeMaxValueProperty =
 		AvaloniaProperty.Register<Slider, double>(nameof(RangeMaxValue), defaultValue: 100);
+
+	// TODO: Add min thumb text color prop
 
 	public Slider()
 	{
@@ -135,17 +137,7 @@ public class Slider : Control
 		RenderSliderLine(ctx);
 		RenderMinThumb(ctx);
 		RenderMaxThumb(ctx);
-
-		var textBrush = Brushes.White;
-		var text = new FormattedText(
-			$"X: {Math.Round(this.mousePos.X, 0)}, Y: {Math.Round(this.mousePos.Y, 0)}",
-			CultureInfo.CurrentCulture,
-			FlowDirection.LeftToRight,
-			Typeface.Default,
-			20,
-			textBrush);
-
-		ctx.DrawText(text, new Point(0, Bounds.Height - (text.LineHeight / 2)));
+		RenderMinValue(ctx);
 	}
 
 	private void ProcessCollisions()
@@ -226,5 +218,22 @@ public class Slider : Control
 		var borderClr = Colors.Transparent;
 
 		ctx.DrawRectangle(this.maxThumb.Bounds, this.maxThumb.Color, borderClr, 5);
+	}
+
+	private void RenderMinValue(DrawingContext ctx)
+	{
+		var textBrush = Brushes.White;
+		var text = new FormattedText(
+			Math.Round(MinValue, 2).ToString(CultureInfo.InvariantCulture),
+			CultureInfo.CurrentCulture,
+			FlowDirection.LeftToRight,
+			Typeface.Default,
+			20,
+			textBrush);
+
+		var minThumbHalfHeight = this.minThumb.Bounds.Height / 2;
+		var pos = new Point(this.minThumb.Bounds.Left, this.minThumb.Bounds.Top + 2);
+
+		ctx.DrawText(text, pos);
 	}
 }

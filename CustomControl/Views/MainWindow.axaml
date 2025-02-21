@@ -1,0 +1,38 @@
+<Window xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:vm="using:CustomControl.ViewModels"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:local="using:CustomControl"
+        mc:Ignorable="d"
+        d:DesignWidth="400" d:DesignHeight="400"
+        x:Class="CustomControl.Views.MainWindow"
+        x:DataType="vm:MainWindowViewModel"
+        WindowStartupLocation="CenterScreen"
+        Background="#1E1E1E"
+        Width="800" Height="800"
+        Icon="/Assets/avalonia-logo.ico"
+        Title="CustomControl"
+        x:Name="Root">
+
+    <Border BorderBrush="White" BorderThickness="1">
+        <Canvas>
+            <Border BorderBrush="Transparent" BorderThickness="0">
+                <local:Slider Width="300" Height="100" Background="#1A1A1A"/>
+            </Border>
+        </Canvas>
+    </Border>
+
+    <!-- <StackPanel Orientation="Vertical" Margin="0, 50, 0, 0"> -->
+    <!--     <local:Slider Width="300" Height="100" Background="#1A1A1A"/> -->
+    <!-- </StackPanel> -->
+
+    <!-- <Grid RowDefinitions="Auto" ColumnDefinitions="Auto" -->
+    <!--       Width="{Binding #Root.Width}" -->
+    <!--       Height="{Binding #Root.Height}"> -->
+    <!--     <Border BorderBrush="White" BorderThickness="1"> -->
+    <!--         <local:Slider Width="100" Height="200"> -->
+    <!--         </local:Slider> -->
+    <!--     </Border> -->
+    <!-- </Grid> -->
+</Window>

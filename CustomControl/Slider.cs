@@ -1,22 +1,20 @@
 ﻿using System;
-using System.Diagnostics;
 using System.Globalization;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
-using Color = Avalonia.Media.Color;
 
 namespace CustomControl;
 
 public class Slider : Control
 {
-	private double leftPadding = 3;
-	private double rightPadding = 3;
 	private Point mousePos;
 	private Thumb minThumb;
 	private Thumb maxThumb;
+	private FormattedText minValueText;
+	private FormattedText maxValueText;
 
 	public static readonly StyledProperty<IBrush?> BackgroundProperty =
 		AvaloniaProperty.Register<Slider, IBrush?>(nameof(Background), defaultValue: Brushes.Transparent);
@@ -33,7 +31,42 @@ public class Slider : Control
 	public static readonly StyledProperty<double> RangeMaxValueProperty =
 		AvaloniaProperty.Register<Slider, double>(nameof(RangeMaxValue), defaultValue: 100);
 
-	// TODO: Add min thumb text color prop
+	public static readonly StyledProperty<double> ThumbRadiusProperty =
+		AvaloniaProperty.Register<Slider, double>(nameof(ThumbRadius), defaultValue: 3);
+
+	public static readonly StyledProperty<Color> MinThumbColorProperty =
+		AvaloniaProperty.Register<Slider, Color>(
+			nameof(MinThumbColor),
+			defaultValue: Colors.CornflowerBlue,
+			coerce: (obj, newClr) =>
+			{
+				if (obj is not Slider slider)
+				{
+					throw new Exception("The object is not a Slider.");
+				}
+
+				slider.minThumb.NonHoverColor = newClr;
+				slider.minThumb.HoverColor = newClr.IncreaseBrightness(25);
+
+				return newClr;
+			});
+
+	public static readonly StyledProperty<Color> MaxThumbColorProperty =
+		AvaloniaProperty.Register<Slider, Color>(
+			nameof(MaxThumbColor),
+			defaultValue: Colors.CornflowerBlue,
+			coerce: (obj, newClr) =>
+			{
+				if (obj is not Slider slider)
+				{
+					throw new Exception("The object is not a Slider.");
+				}
+
+				slider.maxThumb.NonHoverColor = newClr;
+				slider.maxThumb.HoverColor = newClr.IncreaseBrightness(25);
+
+				return newClr;
+			});
 
 	public Slider()
 	{
@@ -71,6 +104,24 @@ public class Slider : Control
 		set => SetValue(RangeMaxValueProperty, value);
 	}
 
+	public double ThumbRadius
+	{
+		get => GetValue(ThumbRadiusProperty);
+		set => SetValue(ThumbRadiusProperty, value);
+	}
+
+	public Color MinThumbColor
+	{
+		get => GetValue(MinThumbColorProperty);
+		set => SetValue(MinThumbColorProperty, value);
+	}
+
+	public Color MaxThumbColor
+	{
+		get => GetValue(MaxThumbColorProperty);
+		set => SetValue(MaxThumbColorProperty, value);
+	}
+
 	protected override void OnLoaded(RoutedEventArgs e)
 	{
 		var thumbWidth = 65;
@@ -79,16 +130,12 @@ public class Slider : Control
 		var halfHeight = Bounds.Height / 2;
 
 		this.minThumb = new Thumb(new Point(0, halfHeight - thumbHalfHeight), new Size(thumbWidth, thumbHeight));
-		var minHoverColorHSV = Colors.IndianRed.ToHsv();
-
-		var newValue = minHoverColorHSV.V + (minHoverColorHSV.V * 0.2);
-		minHoverColorHSV = new HsvColor(minHoverColorHSV.A, minHoverColorHSV.H, minHoverColorHSV.S, newValue);
-		this.minThumb.HoverColor = minHoverColorHSV.ToRgb();
-		this.minThumb.NonHoverColor = Colors.IndianRed;
+		this.minThumb.NonHoverColor = MinThumbColor;
+		this.minThumb.HoverColor = MinThumbColor.IncreaseBrightness(25);
 
 		this.maxThumb = new Thumb(new Point(Bounds.Width - thumbWidth, halfHeight - thumbHalfHeight), new Size(thumbWidth, thumbHeight));
-		this.maxThumb.HoverColor = Colors.Gray;
-		this.maxThumb.NonHoverColor = Colors.White;
+		this.maxThumb.NonHoverColor = MaxThumbColor;
+		this.maxThumb.HoverColor = MaxThumbColor.IncreaseBrightness(25);
 
 		this.minThumb.Update();
 		this.maxThumb.Update();
@@ -119,8 +166,6 @@ public class Slider : Control
 		base.OnPointerReleased(e);
 	}
 
-	private FormattedText minValueText;
-
 	protected override void OnPointerMoved(PointerEventArgs e)
 	{
 		this.mousePos = e.GetCurrentPoint(null).Position;
@@ -144,13 +189,27 @@ public class Slider : Control
 			FlowDirection.LeftToRight,
 			Typeface.Default,
 			20,
-			Brushes.White);
+			Brushes.Black);
 
-		var textWidth = minValueText.Width;
+		this.maxValueText = new FormattedText(
+			Math.Round(MaxValue, 2).ToString(CultureInfo.InvariantCulture),
+			CultureInfo.CurrentCulture,
+			FlowDirection.LeftToRight,
+			Typeface.Default,
+			20,
+			Brushes.Black);
 
-		if (textWidth > this.minThumb.Bounds.Width)
+		var minTextWidth = minValueText.Width;
+		var maxTextWidth = maxValueText.Width;
+
+		if (minTextWidth > this.minThumb.Bounds.Width)
 		{
-			this.minThumb.Bounds = this.minThumb.Bounds.SetWidth(textWidth + leftPadding + rightPadding);
+			this.minThumb.Bounds = this.minThumb.Bounds.SetWidth(minTextWidth + (minTextWidth * 0.2));
+		}
+
+		if (maxTextWidth > this.maxThumb.Bounds.Width)
+		{
+			this.maxThumb.Bounds = this.maxThumb.Bounds.SetWidth(maxTextWidth + (maxTextWidth * 0.2));
 		}
 
 		RenderBackground(ctx);
@@ -158,6 +217,7 @@ public class Slider : Control
 		RenderMinThumb(ctx);
 		RenderMaxThumb(ctx);
 		RenderMinValueText(ctx);
+		RenderMaxValueText(ctx);
 	}
 
 	private void ProcessCollisions()
@@ -231,22 +291,29 @@ public class Slider : Control
 
 	private void RenderMinThumb(DrawingContext ctx)
 	{
-		var borderClr = Colors.Transparent;
-
-		ctx.DrawRectangle(this.minThumb.Bounds, this.minThumb.Color, borderClr, 5);
+		ctx.DrawRectangle(this.minThumb.Bounds, this.minThumb.Color, Colors.Transparent, ThumbRadius);
 	}
 
 	private void RenderMaxThumb(DrawingContext ctx)
 	{
-		var borderClr = Colors.Transparent;
-
-		ctx.DrawRectangle(this.maxThumb.Bounds, this.maxThumb.Color, borderClr, 5);
+		ctx.DrawRectangle(this.maxThumb.Bounds, this.maxThumb.Color, Colors.Transparent, ThumbRadius);
 	}
 
 	private void RenderMinValueText(DrawingContext ctx)
 	{
-		var pos = new Point(this.minThumb.Bounds.Left + leftPadding, this.minThumb.Bounds.Top + 2);
+		var thumbCenterX = this.minThumb.Bounds.Left + (this.minThumb.Bounds.Width / 2);
+		var minTextHalfWidth = this.minValueText.Width / 2;
+		var pos = new Point((thumbCenterX - minTextHalfWidth), this.minThumb.Bounds.Top + 2);
 
 		ctx.DrawText(minValueText, pos);
+	}
+
+	private void RenderMaxValueText(DrawingContext ctx)
+	{
+		var thumbCenterX = this.maxThumb.Bounds.Left + (this.maxThumb.Bounds.Width / 2);
+		var maxTextHalfWidth = this.maxValueText.Width / 2;
+		var pos = new Point((thumbCenterX - maxTextHalfWidth), this.maxThumb.Bounds.Top + 2);
+
+		ctx.DrawText(maxValueText, pos);
 	}
 }

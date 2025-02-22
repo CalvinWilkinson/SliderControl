@@ -1,5 +1,4 @@
 ﻿using Avalonia;
-using Avalonia.Animation.Easings;
 using Avalonia.Media;
 
 namespace CustomControl;
@@ -17,6 +16,16 @@ public static class ExtensionMethods
 		ctrl.RenderTransform = transform;
 
 		return transform;
+	}
+
+	public static Color IncreaseBrightness(this Color value, double percentage)
+	{
+		var colorHSV = value.ToHsv();
+
+		var newValue = colorHSV.V + (colorHSV.V * (percentage / 100));
+		colorHSV = new HsvColor(colorHSV.A, colorHSV.H, colorHSV.S, newValue);
+
+		return colorHSV.ToRgb();
 	}
 
 	public static Rect SetX(this Rect rect, double value) => new(value, rect.Y, rect.Width, rect.Height);

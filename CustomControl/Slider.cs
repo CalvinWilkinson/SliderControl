@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Globalization;
 using Avalonia;
 using Avalonia.Controls;
@@ -11,6 +12,8 @@ namespace CustomControl;
 
 public class Slider : Control
 {
+	private double leftPadding = 3;
+	private double rightPadding = 3;
 	private Point mousePos;
 	private Thumb minThumb;
 	private Thumb maxThumb;
@@ -19,7 +22,7 @@ public class Slider : Control
 		AvaloniaProperty.Register<Slider, IBrush?>(nameof(Background), defaultValue: Brushes.Transparent);
 
 	public static readonly StyledProperty<double> MinValueProperty =
-		AvaloniaProperty.Register<Slider, double>(nameof(MinValue), defaultValue: 123.123);
+		AvaloniaProperty.Register<Slider, double>(nameof(MinValue), defaultValue: 0);
 
 	public static readonly StyledProperty<double> MaxValueProperty =
 		AvaloniaProperty.Register<Slider, double>(nameof(MaxValue), defaultValue: 100);
@@ -116,6 +119,8 @@ public class Slider : Control
 		base.OnPointerReleased(e);
 	}
 
+	private FormattedText minValueText;
+
 	protected override void OnPointerMoved(PointerEventArgs e)
 	{
 		this.mousePos = e.GetCurrentPoint(null).Position;
@@ -133,11 +138,26 @@ public class Slider : Control
 
 	public override void Render(DrawingContext ctx)
 	{
+		this.minValueText = new FormattedText(
+			Math.Round(MinValue, 2).ToString(CultureInfo.InvariantCulture),
+			CultureInfo.CurrentCulture,
+			FlowDirection.LeftToRight,
+			Typeface.Default,
+			20,
+			Brushes.White);
+
+		var textWidth = minValueText.Width;
+
+		if (textWidth > this.minThumb.Bounds.Width)
+		{
+			this.minThumb.Bounds = this.minThumb.Bounds.SetWidth(textWidth + leftPadding + rightPadding);
+		}
+
 		RenderBackground(ctx);
 		RenderSliderLine(ctx);
 		RenderMinThumb(ctx);
 		RenderMaxThumb(ctx);
-		RenderMinValue(ctx);
+		RenderMinValueText(ctx);
 	}
 
 	private void ProcessCollisions()
@@ -152,13 +172,13 @@ public class Slider : Control
 			var overlapAmount = minBounds.Intersect(maxBounds).Width;
 			var overlapHalf = overlapAmount / 2;
 
-			if (this.minThumb.Draggable && !this.maxThumb.Draggable)
+			if (this.minThumb.Draggable)
 			{
 				maxBounds = maxBounds.SetX(minBounds.Right + overlapHalf);
 			}
-			else if (this.maxThumb.Draggable && !this.minThumb.Draggable)
+			else if (this.maxThumb.Draggable)
 			{
-				minBounds = minBounds.SetX((maxBounds.Left - maxBounds.Width) - overlapHalf);
+				minBounds = minBounds.SetX((maxBounds.Left - minBounds.Width) - overlapHalf);
 			}
 		}
 
@@ -171,21 +191,24 @@ public class Slider : Control
 		// If the max thumb is past the right edge of the slider
 		if (maxBounds.Right > Bounds.Width)
 		{
-			maxBounds = maxBounds.SetX(Bounds.Width - minBounds.Width);
+			maxBounds = maxBounds.SetX(Bounds.Width - maxBounds.Width);
 		}
 
+		var noSpaceToLeftOfMaxThumb = maxBounds.Left < minBounds.Right;
 		var noSpaceToRightOfMaxThumb = maxBounds.Right >= Bounds.Width;
+
 		// If the right side of the min thumb is past the left side of the max thumb
-		if (minBounds.Right > maxBounds.Left && noSpaceToRightOfMaxThumb)
+		if (noSpaceToLeftOfMaxThumb && noSpaceToRightOfMaxThumb)
 		{
 			minBounds = minBounds.SetX(maxBounds.Left - minBounds.Width);
 		}
 
-		var spaceToRightOfMaxThumb = maxBounds.Right < Bounds.Width;
+		var noSpaceToLeftOfMinThumb = minBounds.Left <= 0;
+		var noSpaceToRightOfMinThumb = minBounds.Right >= maxBounds.Left;
 
-		// If the right side of the min thumb is past the left side of the max thumb
-		if (minBounds.Right > maxBounds.Left && spaceToRightOfMaxThumb)
+		if (noSpaceToLeftOfMinThumb && noSpaceToRightOfMinThumb)
 		{
+			minBounds = minBounds.SetX(0);
 			maxBounds = maxBounds.SetX(minBounds.Right);
 		}
 
@@ -220,20 +243,10 @@ public class Slider : Control
 		ctx.DrawRectangle(this.maxThumb.Bounds, this.maxThumb.Color, borderClr, 5);
 	}
 
-	private void RenderMinValue(DrawingContext ctx)
+	private void RenderMinValueText(DrawingContext ctx)
 	{
-		var textBrush = Brushes.White;
-		var text = new FormattedText(
-			Math.Round(MinValue, 2).ToString(CultureInfo.InvariantCulture),
-			CultureInfo.CurrentCulture,
-			FlowDirection.LeftToRight,
-			Typeface.Default,
-			20,
-			textBrush);
+		var pos = new Point(this.minThumb.Bounds.Left + leftPadding, this.minThumb.Bounds.Top + 2);
 
-		var minThumbHalfHeight = this.minThumb.Bounds.Height / 2;
-		var pos = new Point(this.minThumb.Bounds.Left, this.minThumb.Bounds.Top + 2);
-
-		ctx.DrawText(text, pos);
+		ctx.DrawText(minValueText, pos);
 	}
 }

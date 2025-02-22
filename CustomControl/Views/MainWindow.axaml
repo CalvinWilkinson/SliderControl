@@ -8,7 +8,7 @@
         d:DesignWidth="400" d:DesignHeight="400"
         x:Class="CustomControl.Views.MainWindow"
         x:DataType="vm:MainWindowViewModel"
-        WindowStartupLocation="CenterScreen"
+        WindowStartupLocation=""
         Background="#1E1E1E"
         Width="800" Height="800"
         Icon="/Assets/avalonia-logo.ico"

@@ -21,6 +21,8 @@ public static class ExtensionMethods
 
 	public static Rect SetX(this Rect rect, double value) => new(value, rect.Y, rect.Width, rect.Height);
 
+	public static Rect SetWidth(this Rect rect, double value) => new(rect.X, rect.Y, value, rect.Height);
+
 	public static Color GetColor(this IBrush? brush)
 	{
 		if (brush is null)

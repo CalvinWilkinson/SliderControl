@@ -23,6 +23,7 @@
                               MinThumbColor="Coral"
                               MaxThumbColor="MediumPurple"
                               TrackColor="Red"
+                              ValueTextSize="14"
                               MinValue="30"/>
             </Border>
         </Canvas>

@@ -16,6 +16,8 @@ public struct Thumb
 
 	public double Width => Bounds.Width;
 
+	public double Height => Bounds.Height;
+
 	public double HalfWidth => Bounds.Width / 2;
 
 	public double Top => Bounds.Top;

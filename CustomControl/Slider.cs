@@ -33,12 +33,9 @@ public class Slider : Control
 					throw new Exception("The object is not a Slider.");
 				}
 
-				return newValue;
-				newValue = newValue < slider.RangeMinValue
+				return newValue < slider.RangeMinValue
 					? Math.Round(slider.RangeMinValue, (int)slider.DecimalPlaces)
 					: Math.Round(newValue, (int)slider.DecimalPlaces);
-
-				return newValue;
 			});
 
 	public static readonly StyledProperty<double> MaxValueProperty =
@@ -106,6 +103,12 @@ public class Slider : Control
 	public static readonly StyledProperty<Color> TrackColorProperty =
 		AvaloniaProperty.Register<Slider, Color>( nameof(TrackColor), defaultValue: Colors.White);
 
+	public static readonly StyledProperty<double> ValueTextSizeProperty =
+		AvaloniaProperty.Register<Slider, double>( nameof(ValueTextSize), defaultValue: 20);
+
+	/// <summary>
+	/// Initializes a new instance of the <see cref="Slider"/> class.
+	/// </summary>
 	public Slider()
 	{
 		base.Width = 41;
@@ -187,6 +190,12 @@ public class Slider : Control
 		set => SetValue(TrackColorProperty, value);
 	}
 
+	public double ValueTextSize
+	{
+		get => GetValue(ValueTextSizeProperty);
+		set => SetValue(ValueTextSizeProperty, value);
+	}
+
 	protected override void OnLoaded(RoutedEventArgs e)
 	{
 		var thumbWidth = 65;
@@ -262,25 +271,6 @@ public class Slider : Control
 		InvalidateVisual();
 
 		base.OnPointerMoved(e);
-		return;
-		this.mousePos = e.GetCurrentPoint(null).Position;
-		// this.minThumb.MousePos = this.mousePos;
-		// this.maxThumb.MousePos = this.mousePos;
-
-		this.minThumb.Update(this.mousePos);
-		this.maxThumb.Update(this.mousePos);
-
-		var rangeMinX = this.minThumb.HalfWidth;
-		var rangeMaxX = this.Bounds.Width - this.maxThumb.HalfWidth;
-		var minValueX = this.minThumb.Left + this.maxThumb.HalfWidth;
-		var maxValueX = this.maxThumb.Left + this.maxThumb.HalfWidth;
-
-		MinValue = minValueX.MapValue(rangeMinX, rangeMaxX, RangeMinValue, RangeMaxValue);
-		MaxValue = maxValueX.MapValue(rangeMinX, rangeMaxX, RangeMinValue, RangeMaxValue);
-
-		InvalidateVisual();
-
-		base.OnPointerMoved(e);
 	}
 
 	protected override void OnPointerEntered(PointerEventArgs e)
@@ -338,7 +328,7 @@ public class Slider : Control
 			CultureInfo.CurrentCulture,
 			FlowDirection.LeftToRight,
 			Typeface.Default,
-			20,
+			ValueTextSize,
 			Brushes.Black);
 
 		this.maxValueText = new FormattedText(
@@ -346,7 +336,7 @@ public class Slider : Control
 			CultureInfo.CurrentCulture,
 			FlowDirection.LeftToRight,
 			Typeface.Default,
-			20,
+			ValueTextSize,
 			Brushes.Black);
 
 		ProcessCollisions();
@@ -364,11 +354,15 @@ public class Slider : Control
 		var minTextWidth = minValueText.Width;
 		var maxTextWidth = maxValueText.Width;
 
+		// If the width of the min value text is larger than the thumb width, increase the size of the
+		// thumb width to accommodate the text
 		if (minTextWidth > this.minThumb.Width)
 		{
 			this.minThumb.Bounds = this.minThumb.Bounds.SetWidth(minTextWidth + (minTextWidth * 0.2));
 		}
 
+		// If the width of the max value text is larger than the thumb width, increase the size of the
+		// thumb width to accommodate the text
 		if (maxTextWidth > this.maxThumb.Width)
 		{
 			this.maxThumb.Bounds = this.maxThumb.Bounds.SetWidth(maxTextWidth + (maxTextWidth * 0.2));
@@ -453,18 +447,26 @@ public class Slider : Control
 
 	private void RenderMinValueText(DrawingContext ctx)
 	{
-		var thumbCenterX = this.minThumb.Left + (this.minThumb.Width / 2);
-		var minTextHalfWidth = this.minValueText.Width / 2;
-		var pos = new Point((thumbCenterX - minTextHalfWidth), this.minThumb.Top + 2);
+		var centerX = this.minThumb.Left + (this.minThumb.Width / 2);
+		var centerY = this.minThumb.Top + (this.minThumb.Height / 2);
+
+		var textHalfWidth = this.minValueText.Width / 2;
+		var textHalfHeight = this.minValueText.Height / 2;
+
+		var pos = new Point((centerX - textHalfWidth), (centerY - textHalfHeight) - 2);
 
 		ctx.DrawText(minValueText, pos);
 	}
 
 	private void RenderMaxValueText(DrawingContext ctx)
 	{
-		var thumbCenterX = this.maxThumb.Left + (this.maxThumb.Width / 2);
-		var maxTextHalfWidth = this.maxValueText.Width / 2;
-		var pos = new Point((thumbCenterX - maxTextHalfWidth), this.maxThumb.Top + 2);
+		var centerX = this.maxThumb.Left + (this.maxThumb.Width / 2);
+		var centerY = this.minThumb.Top + (this.minThumb.Height / 2);
+
+		var textHalfWidth = this.maxValueText.Width / 2;
+		var textHalfHeight = this.minValueText.Height / 2;
+
+		var pos = new Point((centerX - textHalfWidth), (centerY - textHalfHeight) - 2);
 
 		ctx.DrawText(maxValueText, pos);
 	}

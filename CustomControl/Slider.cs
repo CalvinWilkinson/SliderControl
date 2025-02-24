@@ -6,7 +6,6 @@ using Avalonia.Input;
 using Avalonia.Interactivity;
 using Avalonia.Media;
 using Avalonia.Media.Immutable;
-using Avalonia.VisualTree;
 
 namespace CustomControl;
 
@@ -77,8 +76,7 @@ public class Slider : Control
 					throw new Exception("The object is not a Slider.");
 				}
 
-				slider.minThumb.NonHoverColor = newClr;
-				slider.minThumb.HoverColor = newClr.IncreaseBrightness(25);
+				slider.minThumb.Color = newClr;
 
 				return newClr;
 			});
@@ -94,8 +92,7 @@ public class Slider : Control
 					throw new Exception("The object is not a Slider.");
 				}
 
-				slider.maxThumb.NonHoverColor = newClr;
-				slider.maxThumb.HoverColor = newClr.IncreaseBrightness(25);
+				slider.maxThumb.Color = newClr;
 
 				return newClr;
 			});
@@ -103,8 +100,17 @@ public class Slider : Control
 	public static readonly StyledProperty<Color> TrackColorProperty =
 		AvaloniaProperty.Register<Slider, Color>( nameof(TrackColor), defaultValue: Colors.White);
 
+	public static readonly StyledProperty<Color> MinThumbHoverColorProperty =
+		AvaloniaProperty.Register<Slider, Color>( nameof(MinThumbHoverColor), defaultValue: Color.FromArgb(30, 255, 255, 255));
+
+	public static readonly StyledProperty<Color> MaxThumbHoverColorProperty =
+		AvaloniaProperty.Register<Slider, Color>( nameof(MaxThumbHoverColor), defaultValue: Color.FromArgb(30, 255, 255, 255));
+
 	public static readonly StyledProperty<double> ValueTextSizeProperty =
 		AvaloniaProperty.Register<Slider, double>( nameof(ValueTextSize), defaultValue: 20);
+
+	public static readonly StyledProperty<double> TrackThicknessProperty =
+		AvaloniaProperty.Register<Slider, double>( nameof(TrackThickness), defaultValue: 2);
 
 	/// <summary>
 	/// Initializes a new instance of the <see cref="Slider"/> class.
@@ -190,10 +196,28 @@ public class Slider : Control
 		set => SetValue(TrackColorProperty, value);
 	}
 
+	public Color MinThumbHoverColor
+	{
+		get => GetValue(MinThumbHoverColorProperty);
+		set => SetValue(MinThumbHoverColorProperty, value);
+	}
+
+	public Color MaxThumbHoverColor
+	{
+		get => GetValue(MaxThumbHoverColorProperty);
+		set => SetValue(MaxThumbHoverColorProperty, value);
+	}
+
 	public double ValueTextSize
 	{
 		get => GetValue(ValueTextSizeProperty);
 		set => SetValue(ValueTextSizeProperty, value);
+	}
+
+	public double TrackThickness
+	{
+		get => GetValue(TrackThicknessProperty);
+		set => SetValue(TrackThicknessProperty, value);
 	}
 
 	protected override void OnLoaded(RoutedEventArgs e)
@@ -204,12 +228,10 @@ public class Slider : Control
 		var halfHeight = Bounds.Height / 2;
 
 		this.minThumb = new Thumb(new Point(0, halfHeight - thumbHalfHeight), new Size(thumbWidth, thumbHeight));
-		this.minThumb.NonHoverColor = MinThumbColor;
-		this.minThumb.HoverColor = MinThumbColor.IncreaseBrightness(25);
+		this.minThumb.Color = MinThumbColor;
 
 		this.maxThumb = new Thumb(new Point(Bounds.Width - thumbWidth, halfHeight - thumbHalfHeight), new Size(thumbWidth, thumbHeight));
-		this.maxThumb.NonHoverColor = MaxThumbColor;
-		this.maxThumb.HoverColor = MaxThumbColor.IncreaseBrightness(25);
+		this.maxThumb.Color = MaxThumbColor;
 
 		var minWidth = this.minThumb.Width + this.maxThumb.Width;
 
@@ -228,12 +250,18 @@ public class Slider : Control
 
 	protected override void OnPointerPressed(PointerPressedEventArgs e)
 	{
-		this.mousePos = e.GetCurrentPoint(null).Position;
+		this.mousePos = e.GetCurrentPoint(this).Position;
 
 		this.minThumb.MouseDownPos = this.mousePos;
 		this.maxThumb.MouseDownPos = this.mousePos;
 		this.minThumb.Draggable = this.minThumb.Bounds.Contains(this.mousePos);
 		this.maxThumb.Draggable = this.maxThumb.Bounds.Contains(this.mousePos);
+
+		if (this.minThumb.Draggable || this.maxThumb.Draggable)
+		{
+			e.Pointer.Capture(this);
+		}
+
 		this.minThumb.Update(this.mousePos);
 		this.maxThumb.Update(this.mousePos);
 
@@ -247,23 +275,21 @@ public class Slider : Control
 		this.minThumb.Update(this.mousePos);
 		this.maxThumb.Update(this.mousePos);
 
+		e.Pointer.Capture(null);
+
 		base.OnPointerReleased(e);
 	}
 
 	protected override void OnPointerMoved(PointerEventArgs e)
 	{
-		this.mousePos = e.GetCurrentPoint(null).Position;
+		this.mousePos = e.GetCurrentPoint(this).Position;
 
 		this.minThumb.Update(this.mousePos);
 		this.maxThumb.Update(this.mousePos);
 
-		if (this.minThumb.Draggable)
+		if (this.minThumb.Draggable || this.maxThumb.Draggable)
 		{
 			MinValue = CalcMinValue();
-		}
-
-		if (this.maxThumb.Draggable)
-		{
 			MaxValue = CalcMaxValue();
 		}
 
@@ -277,6 +303,7 @@ public class Slider : Control
 	{
 		this.minThumb.Draggable = false;
 		this.maxThumb.Draggable = false;
+		e.Pointer.Capture(null);
 
 		base.OnPointerEntered(e);
 	}
@@ -285,6 +312,7 @@ public class Slider : Control
 	{
 		this.minThumb.Draggable = false;
 		this.maxThumb.Draggable = false;
+		e.Pointer.Capture(null);
 
 		base.OnPointerExited(e);
 	}
@@ -429,7 +457,7 @@ public class Slider : Control
 
 	private void RenderSliderTrack(DrawingContext ctx)
 	{
-		var pen = new Pen(new ImmutableSolidColorBrush(TrackColor), 2);
+		var pen = new Pen(new ImmutableSolidColorBrush(TrackColor), TrackThickness);
 
 		var halfHeight = Bounds.Height / 2;
 		ctx.DrawLine(pen, new Point(0, halfHeight), new Point(Width, halfHeight));
@@ -438,11 +466,23 @@ public class Slider : Control
 	private void RenderMinThumb(DrawingContext ctx)
 	{
 		ctx.DrawRectangle(this.minThumb.Bounds, this.minThumb.Color, Colors.Transparent, ThumbRadius);
+
+		if (this.minThumb.MouseIsOver)
+		{
+			// Draw an over loy over the control to simulate a brighter hover effect
+			ctx.DrawRectangle(this.minThumb.Bounds, MinThumbHoverColor, Colors.Transparent, ThumbRadius);
+		}
 	}
 
 	private void RenderMaxThumb(DrawingContext ctx)
 	{
 		ctx.DrawRectangle(this.maxThumb.Bounds, this.maxThumb.Color, Colors.Transparent, ThumbRadius);
+
+		if (this.maxThumb.MouseIsOver)
+		{
+			// Draw an over loy over the control to simulate a brighter hover effect
+			ctx.DrawRectangle(this.maxThumb.Bounds, MaxThumbHoverColor, Colors.Transparent, ThumbRadius);
+		}
 	}
 
 	private void RenderMinValueText(DrawingContext ctx)

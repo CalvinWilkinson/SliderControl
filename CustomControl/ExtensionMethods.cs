@@ -70,8 +70,18 @@ public static class ExtensionMethods
 	{
 		var colorHSV = value.ToHsv();
 
-		var newValue = colorHSV.V + (colorHSV.V * (percentage / 100));
-		colorHSV = new HsvColor(colorHSV.A, colorHSV.H, colorHSV.S, newValue);
+		if (colorHSV.V >= 100)
+		{
+			var clrValue = colorHSV.V < 0.01 ? 0.01 : colorHSV.V;
+			var newValue = clrValue + (clrValue * (percentage / 100));
+			colorHSV = new HsvColor(colorHSV.A, colorHSV.H, colorHSV.S, newValue);
+		}
+		else if (colorHSV.S >= 100)
+		{
+			var clrValue = colorHSV.S < 0.01 ? 0.01 : colorHSV.S;
+			var newValue = clrValue + (clrValue * (percentage / 100));
+			colorHSV = new HsvColor(colorHSV.A, colorHSV.H, newValue, colorHSV.V);
+		}
 
 		return colorHSV.ToRgb();
 	}

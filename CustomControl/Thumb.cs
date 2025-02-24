@@ -22,11 +22,7 @@ public struct Thumb
 
 	public double Top => Bounds.Top;
 
-	public Color Color { get; private set; } = Colors.White;
-
-	public Color HoverColor { get; set; } = Colors.Gray;
-
-	public Color NonHoverColor { get; set; } = Colors.White;
+	public Color Color { get; set; } = Colors.White;
 
 	public bool Draggable { get; set; }
 
@@ -39,7 +35,6 @@ public struct Thumb
 		if (Bounds.Contains(mousePos))
 		{
 			MouseIsOver = true;
-			Color = HoverColor;
 
 			if (Draggable)
 			{
@@ -57,7 +52,6 @@ public struct Thumb
 		else
 		{
 			MouseIsOver = false;
-			Color = NonHoverColor;
 		}
 	}
 }

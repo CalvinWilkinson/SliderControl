@@ -12,30 +12,36 @@ public struct Thumb
 
 	public Rect Bounds { get; set; }
 
+	public double Left => Bounds.Left;
+
+	public double Width => Bounds.Width;
+
+	public double HalfWidth => Bounds.Width / 2;
+
+	public double Top => Bounds.Top;
+
 	public Color Color { get; private set; } = Colors.White;
 
 	public Color HoverColor { get; set; } = Colors.Gray;
 
 	public Color NonHoverColor { get; set; } = Colors.White;
 
-	public bool Draggable { get; private set; }
-
-	public Point MousePos { get; set; }
+	public bool Draggable { get; set; }
 
 	public Point MouseDownPos { get; set; }
 
 	public bool MouseIsOver { get; set; }
 
-	public void Update()
+	public void Update(Point mousePos)
 	{
-		if (Bounds.Contains(MousePos))
+		if (Bounds.Contains(mousePos))
 		{
 			MouseIsOver = true;
 			Color = HoverColor;
 
 			if (Draggable)
 			{
-				var deltaX = MousePos.X - MouseDownPos.X;
+				var deltaX = mousePos.X - MouseDownPos.X;
 
 				Bounds = new Rect(
 					Bounds.X + deltaX,
@@ -44,7 +50,7 @@ public struct Thumb
 					Bounds.Height);
 			}
 
-			MouseDownPos = MousePos;
+			MouseDownPos = mousePos;
 		}
 		else
 		{
@@ -52,6 +58,4 @@ public struct Thumb
 			Color = NonHoverColor;
 		}
 	}
-
-	public void UpdateDragState(bool isMouseDown) => Draggable = MouseIsOver && isMouseDown;
 }

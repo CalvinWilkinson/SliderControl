@@ -19,14 +19,7 @@
         <Canvas>
             <Border BorderBrush="Transparent" BorderThickness="0">
                 <local:Slider Width="200" Height="100"
-                              Margin="25, 25, 0, 0"
-                              Background="DarkCyan"
-                              MinThumbColor="CornflowerBlue"
-                              MaxThumbColor="CornflowerBlue"
-                              TrackColor="Red"
-                              TrackThickness="10"
-                              ValueTextSize="14"
-                              MinValue="30"/>
+                              Margin="25, 25, 0, 0"/>
             </Border>
         </Canvas>
     </Border>

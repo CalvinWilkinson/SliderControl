@@ -1,10 +1,14 @@
-﻿using Avalonia;
+﻿using System;
+using Avalonia;
+using Avalonia.Dialogs;
 using Avalonia.Media;
 
 namespace CustomControl;
 
 public struct Thumb
 {
+	private double dragOffsetX;
+
 	public Thumb(Point position, Size size)
 	{
 		Bounds = new Rect(position, size);
@@ -13,6 +17,8 @@ public struct Thumb
 	public Rect Bounds { get; set; }
 
 	public double Left => Bounds.Left;
+
+	public double Right => Bounds.Right;
 
 	public double Width => Bounds.Width;
 
@@ -26,32 +32,45 @@ public struct Thumb
 
 	public bool Draggable { get; set; }
 
-	public Point MouseDownPos { get; set; }
-
 	public bool MouseIsOver { get; set; }
 
-	public void Update(Point mousePos)
+	public void SetLeft(double value) => Bounds = Bounds.SetX(value);
+
+	public void SetRight(double value) => Bounds = Bounds.SetX(value - Width);
+
+	public void SetWidth(double value) => Bounds = Bounds.SetWidth(value);
+
+	public void SetCenterX(double value) => Bounds = Bounds.SetX(value - HalfWidth);
+
+	public void UpdateNew(Point mousePos, bool isMouseDown)
 	{
 		if (Bounds.Contains(mousePos))
 		{
 			MouseIsOver = true;
 
-			if (Draggable)
+			if (!isMouseDown)
 			{
-				var deltaX = mousePos.X - MouseDownPos.X;
+				Draggable = false;
 
-				Bounds = new Rect(
-					Bounds.X + deltaX,
-					Bounds.Y,
-					Bounds.Width,
-					Bounds.Height);
+				return;
 			}
 
-			MouseDownPos = mousePos;
+			if (!Draggable)
+			{
+				Draggable = true;
+				dragOffsetX = mousePos.X - Bounds.X;
+			}
+
+			SetLeft(mousePos.X - dragOffsetX);
 		}
 		else
 		{
 			MouseIsOver = false;
+
+			if (!isMouseDown)
+			{
+				Draggable = false;
+			}
 		}
 	}
 }

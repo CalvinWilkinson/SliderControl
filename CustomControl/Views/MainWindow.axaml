@@ -15,25 +15,29 @@
         Title="CustomControl"
         x:Name="Root">
 
-    <Border BorderBrush="White" BorderThickness="1">
-        <Canvas>
-            <Border BorderBrush="Transparent" BorderThickness="0">
-                <local:Slider Width="200" Height="100"
-                              Margin="25, 25, 0, 0"/>
-            </Border>
-        </Canvas>
-    </Border>
+    <!-- <Border BorderBrush="White" BorderThickness="1"> -->
+    <!--     <Canvas> -->
+    <!--         <Border BorderBrush="Transparent" BorderThickness="0"> -->
+    <!--             <local:Slider Width="200" -->
+    <!--                           Margin="25, 25, 0, 0" -->
+    <!--                           MaxValue="71"/> -->
+    <!--         </Border> -->
+    <!--     </Canvas> -->
+    <!-- </Border> -->
 
     <!-- <StackPanel Orientation="Vertical" Margin="0, 50, 0, 0"> -->
     <!--     <local:Slider Width="300" Height="100" Background="#1A1A1A"/> -->
     <!-- </StackPanel> -->
 
-    <!-- <Grid RowDefinitions="Auto" ColumnDefinitions="Auto" -->
-    <!--       Width="{Binding #Root.Width}" -->
-    <!--       Height="{Binding #Root.Height}"> -->
-    <!--     <Border BorderBrush="White" BorderThickness="1"> -->
-    <!--         <local:Slider Width="100" Height="200"> -->
-    <!--         </local:Slider> -->
-    <!--     </Border> -->
-    <!-- </Grid> -->
+    <Grid RowDefinitions="Auto" ColumnDefinitions="Auto"
+          Width="{Binding #Root.Width}"
+          Height="{Binding #Root.Height}">
+        <Border BorderBrush="White" BorderThickness="1">
+            <local:Slider Width="200" Height="100"
+                          Background="DarkCyan"
+                          Margin="25, 25, 0, 0"
+                          MinValue="30"
+                          MaxValue="71"/>
+        </Border>
+    </Grid>
 </Window>

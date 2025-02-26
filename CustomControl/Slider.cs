@@ -9,49 +9,28 @@ using Avalonia.Media.Immutable;
 
 namespace CustomControl;
 
+// TODO: Make sure that the width of the control is not less than the combined width of the thumbs
+
 public class Slider : Control
 {
 	private const double DefaultHeight = 35;
+	private const double TextPaddingPercent = 0.2;
 	private Point mousePos;
 	private Thumb minThumb;
 	private Thumb maxThumb;
 	private FormattedText minValueText;
 	private FormattedText maxValueText;
+	private bool skipMaxValueCoerce;
+	private bool isLeftMouseDown;
 
 	public static readonly StyledProperty<IBrush?> BackgroundProperty =
 		AvaloniaProperty.Register<Slider, IBrush?>(nameof(Background), defaultValue: Brushes.Transparent);
 
 	public static readonly StyledProperty<double> MinValueProperty =
-		AvaloniaProperty.Register<Slider, double>(
-			nameof(MinValue),
-			defaultValue: 0,
-			coerce: (obj, newValue) =>
-			{
-				if (obj is not Slider slider)
-				{
-					throw new Exception("The object is not a Slider.");
-				}
-
-				return newValue < slider.RangeMinValue
-					? Math.Round(slider.RangeMinValue, (int)slider.DecimalPlaces)
-					: Math.Round(newValue, (int)slider.DecimalPlaces);
-			});
+		AvaloniaProperty.Register<Slider, double>(nameof(MinValue), defaultValue: 0);
 
 	public static readonly StyledProperty<double> MaxValueProperty =
-		AvaloniaProperty.Register<Slider, double>(
-			nameof(MaxValue),
-			defaultValue: 100,
-			coerce: (obj, newValue) =>
-			{
-				if (obj is not Slider slider)
-				{
-					throw new Exception("The object is not a Slider.");
-				}
-
-				return newValue > slider.RangeMaxValue
-					? Math.Round(slider.RangeMaxValue, (int)slider.DecimalPlaces)
-					: Math.Round(newValue, (int)slider.DecimalPlaces);
-			});
+		AvaloniaProperty.Register<Slider, double>(nameof(MaxValue), defaultValue: 100);
 
 	public static readonly StyledProperty<uint> DecimalPlacesProperty =
 		AvaloniaProperty.Register<Slider, uint>(nameof(DecimalPlaces), defaultValue: 2);
@@ -117,7 +96,7 @@ public class Slider : Control
 	/// </summary>
 	public Slider()
 	{
-		base.Width = 41;
+		base.Width = 200;
 		base.Height = DefaultHeight;
 	}
 
@@ -222,58 +201,88 @@ public class Slider : Control
 
 	protected override void OnLoaded(RoutedEventArgs e)
 	{
+		Console.WriteLine("ON LOADED");
+
 		var thumbWidth = 65;
 		var thumbHeight = DefaultHeight;
 		var thumbHalfHeight = thumbHeight / 2;
-		var halfHeight = Bounds.Height / 2;
+		var halfHeight = base.Height / 2;
 
 		this.minThumb = new Thumb(new Point(0, halfHeight - thumbHalfHeight), new Size(thumbWidth, thumbHeight));
 		this.minThumb.Color = MinThumbColor;
 
-		this.maxThumb = new Thumb(new Point(Bounds.Width - thumbWidth, halfHeight - thumbHalfHeight), new Size(thumbWidth, thumbHeight));
+		this.maxThumb = new Thumb(new Point(base.Width - thumbWidth, halfHeight - thumbHalfHeight), new Size(thumbWidth, thumbHeight));
 		this.maxThumb.Color = MaxThumbColor;
 
 		var minWidth = this.minThumb.Width + this.maxThumb.Width;
 
-		if (Width < minWidth)
+		if (base.Width < minWidth)
 		{
 			base.Width = minWidth;
 		}
 
-		this.minThumb.Update(new Point());
-		this.maxThumb.Update(new Point());
+		var minPosX = CalcPosFromValue(MinValue);
+		var maxPosX = CalcPosFromValue(MaxValue);
 
+		minThumb.SetCenterX(minPosX);
+		maxThumb.SetCenterX(maxPosX);
+
+		ProcessCollisions();
 		InvalidateVisual();
+
+		if (VisualRoot is TopLevel topLevel)
+		{
+			topLevel.PointerExited += TopLevelOnPointerExited;
+		}
 
 		base.OnLoaded(e);
 	}
 
+	protected override void OnUnloaded(RoutedEventArgs e)
+	{
+		if (VisualRoot is TopLevel topLevel)
+		{
+			topLevel.PointerExited -= TopLevelOnPointerExited;
+		}
+
+		base.OnUnloaded(e);
+	}
+
+	private void TopLevelOnPointerExited(object? sender, PointerEventArgs e)
+	{
+		this.isLeftMouseDown = false;
+		this.minThumb.UpdateNew(this.mousePos, this.isLeftMouseDown);
+		this.maxThumb.UpdateNew(this.mousePos, this.isLeftMouseDown);
+
+		if (e.Pointer.Captured is not null)
+		{
+			e.Pointer.Capture(null);
+		}
+
+		InvalidateVisual();
+	}
+
 	protected override void OnPointerPressed(PointerPressedEventArgs e)
 	{
+		this.isLeftMouseDown = e.GetCurrentPoint(this).Properties.IsLeftButtonPressed;
 		this.mousePos = e.GetCurrentPoint(this).Position;
 
-		this.minThumb.MouseDownPos = this.mousePos;
-		this.maxThumb.MouseDownPos = this.mousePos;
-		this.minThumb.Draggable = this.minThumb.Bounds.Contains(this.mousePos);
-		this.maxThumb.Draggable = this.maxThumb.Bounds.Contains(this.mousePos);
+		this.minThumb.UpdateNew(this.mousePos, this.isLeftMouseDown);
+		this.maxThumb.UpdateNew(this.mousePos, this.isLeftMouseDown);
 
 		if (this.minThumb.Draggable || this.maxThumb.Draggable)
 		{
 			e.Pointer.Capture(this);
 		}
 
-		this.minThumb.Update(this.mousePos);
-		this.maxThumb.Update(this.mousePos);
-
 		base.OnPointerPressed(e);
 	}
 
 	protected override void OnPointerReleased(PointerReleasedEventArgs e)
 	{
-		this.minThumb.Draggable = false;
-		this.maxThumb.Draggable = false;
-		this.minThumb.Update(this.mousePos);
-		this.maxThumb.Update(this.mousePos);
+		this.isLeftMouseDown = e.GetCurrentPoint(this).Properties.IsLeftButtonPressed;
+		this.minThumb.UpdateNew(this.mousePos, this.isLeftMouseDown);
+		this.maxThumb.UpdateNew(this.mousePos, this.isLeftMouseDown);
 
 		e.Pointer.Capture(null);
 
@@ -284,13 +293,13 @@ public class Slider : Control
 	{
 		this.mousePos = e.GetCurrentPoint(this).Position;
 
-		this.minThumb.Update(this.mousePos);
-		this.maxThumb.Update(this.mousePos);
+		this.minThumb.UpdateNew(this.mousePos, this.isLeftMouseDown);
+		this.maxThumb.UpdateNew(this.mousePos, this.isLeftMouseDown);
 
 		if (this.minThumb.Draggable || this.maxThumb.Draggable)
 		{
-			MinValue = CalcMinValue();
-			MaxValue = CalcMaxValue();
+			MinValue = CalcMinValueFromMinPos();
+			MaxValue = CalcMaxValueFromMaxPos();
 		}
 
 		ProcessCollisions();
@@ -325,7 +334,7 @@ public class Slider : Control
 		base.OnLostFocus(e);
 	}
 
-	private double CalcMinValue()
+	private double CalcMinValueFromMinPos()
 	{
 		var halfWidth = this.minThumb.HalfWidth;
 		var center = this.minThumb.Left + halfWidth; // X is the left side of the control
@@ -337,13 +346,34 @@ public class Slider : Control
 		return Math.Round(newValueMin, 2);
 	}
 
-	private double CalcMaxValue()
+	private double CalcMaxValueFromMaxPos()
 	{
 		var halfWidth = this.maxThumb.HalfWidth;
 		var center = this.maxThumb.Left + halfWidth; // X is the left side of the control
 
 		// Calculate the maximum value by mapping the draggable width to the numerical range settings
 		var newValueMax = center.MapValue(halfWidth, Width - halfWidth, RangeMinValue, RangeMaxValue);
+		newValueMax = newValueMax > RangeMaxValue ? RangeMaxValue : newValueMax;
+
+		return Math.Round(newValueMax, 2);
+	}
+
+	private double CalcPosFromValue(double value)
+	{
+		var pixelStartX = this.minThumb.HalfWidth;
+		var pixelStopX = Bounds.Width - this.maxThumb.HalfWidth;
+
+		var leftPosX = value.MapValue(RangeMinValue, RangeMaxValue, pixelStartX, pixelStopX);
+
+		return leftPosX;
+	}
+
+	private double CalcValueFromPos(double posX)
+	{
+		var halfWidth = this.maxThumb.HalfWidth;
+
+		// Calculate the maximum value by mapping the draggable width to the numerical range settings
+		var newValueMax = posX.MapValue(halfWidth, Width - halfWidth, RangeMinValue, RangeMaxValue);
 		newValueMax = newValueMax > RangeMaxValue ? RangeMaxValue : newValueMax;
 
 		return Math.Round(newValueMax, 2);
@@ -367,8 +397,6 @@ public class Slider : Control
 			ValueTextSize,
 			Brushes.Black);
 
-		ProcessCollisions();
-
 		RenderBackground(ctx);
 		RenderSliderTrack(ctx);
 		RenderMinThumb(ctx);
@@ -386,68 +414,81 @@ public class Slider : Control
 		// thumb width to accommodate the text
 		if (minTextWidth > this.minThumb.Width)
 		{
-			this.minThumb.Bounds = this.minThumb.Bounds.SetWidth(minTextWidth + (minTextWidth * 0.2));
+			this.minThumb.SetWidth(minTextWidth + (minTextWidth * TextPaddingPercent));
 		}
 
 		// If the width of the max value text is larger than the thumb width, increase the size of the
 		// thumb width to accommodate the text
 		if (maxTextWidth > this.maxThumb.Width)
 		{
-			this.maxThumb.Bounds = this.maxThumb.Bounds.SetWidth(maxTextWidth + (maxTextWidth * 0.2));
+			this.maxThumb.SetWidth(maxTextWidth + (maxTextWidth * TextPaddingPercent));
 		}
 
-		var minBounds = this.minThumb.Bounds;
-		var maxBounds = this.maxThumb.Bounds;
-
-		var isOverlapping = minBounds.Intersects(maxBounds);
+		var isOverlapping = this.minThumb.Bounds.Intersects(this.maxThumb.Bounds);
 
 		if (isOverlapping)
 		{
-			var overlapAmount = minBounds.Intersect(maxBounds).Width;
-			var overlapHalf = overlapAmount / 2;
+			Console.WriteLine("OVERLAPPING");
+			var overlapAmount = this.minThumb.Bounds.Intersect(this.maxThumb.Bounds).Width;
+
+			var isSpaceToLeftOfMinThumb = this.minThumb.Left > 0;
+			var isSpaceToRightOfMaxThumb = this.maxThumb.Right < Bounds.Width;
+			var noSpaceBetween = this.minThumb.Right > this.maxThumb.Left && this.minThumb.Left < this.maxThumb.Left;
 
 			if (this.minThumb.Draggable)
 			{
-				maxBounds = maxBounds.SetX(minBounds.Right + overlapHalf);
+				// Push the max thumb to the right
+				this.maxThumb.SetLeft(this.minThumb.Right);
 			}
 			else if (this.maxThumb.Draggable)
 			{
-				minBounds = minBounds.SetX((maxBounds.Left - minBounds.Width) - overlapHalf);
+				// Push the min thumb to the left
+				this.minThumb.SetRight(this.maxThumb.Left);
+			}
+
+			var notDraggingAnyThumbs = !this.minThumb.Draggable && !this.maxThumb.Draggable;
+
+			if (notDraggingAnyThumbs && isSpaceToLeftOfMinThumb && isSpaceToRightOfMaxThumb && noSpaceBetween)
+			{
+				Console.WriteLine("SPACE ON EACH SIDE");
+				var overlapHalf = overlapAmount / 2;
+
+				this.minThumb.SetRight(this.minThumb.Right - overlapHalf);
+				this.maxThumb.SetLeft(this.maxThumb.Left + overlapHalf);
 			}
 		}
 
 		// If the min thumb is past the left edge of the slider
-		if (minBounds.Left < 0)
+		if (this.minThumb.Left < 0)
 		{
-			minBounds = minBounds.SetX(0);
+			this.minThumb.SetLeft(0);
 		}
 
 		// If the max thumb is past the right edge of the slider
-		if (maxBounds.Right > Bounds.Width)
+		if (this.maxThumb.Right > Bounds.Width)
 		{
-			maxBounds = maxBounds.SetX(Bounds.Width - maxBounds.Width);
+			this.maxThumb.SetRight(Bounds.Width);
 		}
 
-		var noSpaceToLeftOfMinThumb = minBounds.Left <= 0;
-		var noSpaceToRightOfMinThumb = minBounds.Right >= maxBounds.Left;
+		var noSpaceToLeftOfMinThumb = this.minThumb.Left <= 0;
+		var noSpaceToRightOfMinThumb = this.minThumb.Right >= this.maxThumb.Left;
 
+		// If there is no space to the left or right side of the min thumb
 		if (noSpaceToLeftOfMinThumb && noSpaceToRightOfMinThumb)
 		{
-			minBounds = minBounds.SetX(0);
-			maxBounds = maxBounds.SetX(minBounds.Right);
+			this.minThumb.SetLeft(0);
+			this.maxThumb.SetLeft(this.minThumb.Right);
 		}
 
-		var noSpaceToLeftOfMaxThumb = maxBounds.Left < minBounds.Right;
-		var noSpaceToRightOfMaxThumb = maxBounds.Right >= Bounds.Width;
+		var noSpaceToLeftOfMaxThumb = this.maxThumb.Left < this.minThumb.Right;
+		var noSpaceToRightOfMaxThumb = this.maxThumb.Right >= Bounds.Width;
 
-		// If the right side of the min thumb is past the left side of the max thumb
+		// If there is no space to the left or right side of the max thumb
 		if (noSpaceToLeftOfMaxThumb && noSpaceToRightOfMaxThumb)
 		{
-			minBounds = minBounds.SetX(maxBounds.Left - minBounds.Width);
+			this.maxThumb.SetRight(Bounds.Width);
+			this.minThumb.SetRight(this.maxThumb.Left);
 		}
-
-		this.minThumb.Bounds = minBounds;
-		this.maxThumb.Bounds = maxBounds;
 	}
 
 	private void RenderBackground(DrawingContext ctx)
@@ -478,9 +519,9 @@ public class Slider : Control
 	{
 		ctx.DrawRectangle(this.maxThumb.Bounds, this.maxThumb.Color, Colors.Transparent, ThumbRadius);
 
+		// Draw an over loy over the control to simulate a brighter hover effect
 		if (this.maxThumb.MouseIsOver)
 		{
-			// Draw an over loy over the control to simulate a brighter hover effect
 			ctx.DrawRectangle(this.maxThumb.Bounds, MaxThumbHoverColor, Colors.Transparent, ThumbRadius);
 		}
 	}

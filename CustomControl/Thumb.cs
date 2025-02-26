@@ -61,6 +61,7 @@ public struct Thumb
 				dragOffsetX = mousePos.X - Bounds.X;
 			}
 
+			Console.WriteLine("DRAGGING THE THUMB");
 			SetLeft(mousePos.X - dragOffsetX);
 		}
 		else

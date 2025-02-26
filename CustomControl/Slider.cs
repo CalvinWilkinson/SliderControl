@@ -91,14 +91,30 @@ public class Slider : Control
 	public static readonly StyledProperty<double> TrackThicknessProperty =
 		AvaloniaProperty.Register<Slider, double>( nameof(TrackThickness), defaultValue: 2);
 
-	/// <summary>
-	/// Initializes a new instance of the <see cref="Slider"/> class.
-	/// </summary>
-	public Slider()
-	{
-		base.Width = 200;
-		base.Height = DefaultHeight;
-	}
+	private bool skipWidthCoerce;
+
+	public static readonly StyledProperty<double> WidthProperty = AvaloniaProperty.Register<Slider, double>(
+		nameof(Width),
+		coerce: (obj, newValue) =>
+		{
+			if (obj is not Slider slider)
+			{
+				throw new Exception("The object is not a Slider.");
+			}
+
+			if (slider.skipWidthCoerce)
+			{
+				return newValue;
+			}
+
+			var minWidth = slider.minThumb.Width + slider.maxThumb.Width;
+
+			newValue = newValue < minWidth
+				? minWidth
+				: newValue;
+
+			return newValue;
+		});
 
 	public IBrush? Background
 	{
@@ -142,20 +158,15 @@ public class Slider : Control
 		set => SetValue(ThumbRadiusProperty, value);
 	}
 
-	/// <summary>
-	/// Gets or sets the width of the <see cref="Slider"/>.
-	/// </summary>
-	/// <remarks>The width of the <see cref="Slider"/> cannot be less then the combined with of the thumbs.</remarks>
 	public new double Width
 	{
-		get => base.Width;
+		get => GetValue(WidthProperty);
 		set
 		{
-			var minWidth = this.minThumb.Width + this.maxThumb.Width;
-
-			base.Width = value < minWidth ? minWidth : value;
+			SetValue(WidthProperty, value);
+			base.Width = value;
 		}
-}
+	}
 
 	public Color MinThumbColor
 	{
@@ -201,11 +212,13 @@ public class Slider : Control
 
 	protected override void OnLoaded(RoutedEventArgs e)
 	{
-		Console.WriteLine("ON LOADED");
+		base.Width = 200;
+		base.Height = DefaultHeight;
 
-		var thumbWidth = 65;
-		var thumbHeight = DefaultHeight;
-		var thumbHalfHeight = thumbHeight / 2;
+		const int thumbWidth = 65;
+		const double thumbHeight = DefaultHeight;
+		const double thumbHalfHeight = thumbHeight / 2;
+
 		var halfHeight = base.Height / 2;
 
 		this.minThumb = new Thumb(new Point(0, halfHeight - thumbHalfHeight), new Size(thumbWidth, thumbHeight));
@@ -226,6 +239,8 @@ public class Slider : Control
 
 		minThumb.SetCenterX(minPosX);
 		maxThumb.SetCenterX(maxPosX);
+
+		Width = Width;
 
 		ProcessCollisions();
 		InvalidateVisual();
@@ -292,14 +307,30 @@ public class Slider : Control
 	protected override void OnPointerMoved(PointerEventArgs e)
 	{
 		this.mousePos = e.GetCurrentPoint(this).Position;
-
 		this.minThumb.UpdateNew(this.mousePos, this.isLeftMouseDown);
 		this.maxThumb.UpdateNew(this.mousePos, this.isLeftMouseDown);
 
-		if (this.minThumb.Draggable || this.maxThumb.Draggable)
+		if (this.minThumb.Draggable)
 		{
-			MinValue = CalcMinValueFromMinPos();
-			MaxValue = CalcMaxValueFromMaxPos();
+			var leftThumbCanMove = this.minThumb.Right < this.maxThumb.Left;
+			var rightThumbCanMove = this.maxThumb.Right < Bounds.Width;
+
+			if (leftThumbCanMove || rightThumbCanMove)
+			{
+				MinValue = CalcMinValueFromMinPos();
+			}
+		}
+
+		if (this.maxThumb.Draggable)
+		{
+			var leftThumbCanMove = this.minThumb.Left > 0;
+			var rightThumbCanMove = this.maxThumb.Left > this.minThumb.Right;
+
+			if (leftThumbCanMove || rightThumbCanMove)
+			{
+				MinValue = CalcMinValueFromMinPos();
+				MaxValue = CalcMaxValueFromMaxPos();
+			}
 		}
 
 		ProcessCollisions();
@@ -397,6 +428,8 @@ public class Slider : Control
 			ValueTextSize,
 			Brushes.Black);
 
+		ProcessCollisions();
+
 		RenderBackground(ctx);
 		RenderSliderTrack(ctx);
 		RenderMinThumb(ctx);
@@ -428,7 +461,6 @@ public class Slider : Control
 
 		if (isOverlapping)
 		{
-			Console.WriteLine("OVERLAPPING");
 			var overlapAmount = this.minThumb.Bounds.Intersect(this.maxThumb.Bounds).Width;
 
 			var isSpaceToLeftOfMinThumb = this.minThumb.Left > 0;
@@ -450,7 +482,6 @@ public class Slider : Control
 
 			if (notDraggingAnyThumbs && isSpaceToLeftOfMinThumb && isSpaceToRightOfMaxThumb && noSpaceBetween)
 			{
-				Console.WriteLine("SPACE ON EACH SIDE");
 				var overlapHalf = overlapAmount / 2;
 
 				this.minThumb.SetRight(this.minThumb.Right - overlapHalf);

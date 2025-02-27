@@ -27,10 +27,50 @@ public class Slider : Control
 		AvaloniaProperty.Register<Slider, IBrush?>(nameof(Background), defaultValue: Brushes.Transparent);
 
 	public static readonly StyledProperty<double> MinValueProperty =
-		AvaloniaProperty.Register<Slider, double>(nameof(MinValue), defaultValue: 0);
+		AvaloniaProperty.Register<Slider, double>(
+			nameof(MinValue),
+			defaultValue: 0,
+			coerce: (obj, newValue) =>
+			{
+				Console.WriteLine("COERCING MIN VALUE");
+				if (obj is not Slider slider)
+				{
+					throw new Exception("The object is not a Slider.");
+				}
+
+				return newValue;
+
+				var minThumbMaxValue = slider.CalcValueFromPos(slider.maxThumb.Left - slider.minThumb.HalfWidth);
+
+				Console.WriteLine(minThumbMaxValue);
+
+				return newValue > minThumbMaxValue
+					? minThumbMaxValue
+					: newValue;
+			});
 
 	public static readonly StyledProperty<double> MaxValueProperty =
-		AvaloniaProperty.Register<Slider, double>(nameof(MaxValue), defaultValue: 100);
+		AvaloniaProperty.Register<Slider, double>(
+			nameof(MaxValue),
+			defaultValue: 100,
+			coerce: (obj, newValue) =>
+			{
+				Console.WriteLine("COERCING MAX VALUE");
+				if (obj is not Slider slider)
+				{
+					throw new Exception("The object is not a Slider.");
+				}
+
+				return newValue;
+
+				var minThumbMaxValue = slider.CalcValueFromPos(slider.maxThumb.Left - slider.minThumb.HalfWidth);
+
+				Console.WriteLine(minThumbMaxValue);
+
+				return newValue > minThumbMaxValue
+					? minThumbMaxValue
+					: newValue;
+			});
 
 	public static readonly StyledProperty<uint> DecimalPlacesProperty =
 		AvaloniaProperty.Register<Slider, uint>(nameof(DecimalPlaces), defaultValue: 2);
@@ -212,6 +252,7 @@ public class Slider : Control
 
 	protected override void OnLoaded(RoutedEventArgs e)
 	{
+		Console.WriteLine("LOADED");
 		base.Width = 200;
 		base.Height = DefaultHeight;
 
@@ -318,6 +359,7 @@ public class Slider : Control
 			if (leftThumbCanMove || rightThumbCanMove)
 			{
 				MinValue = CalcMinValueFromMinPos();
+				MaxValue = CalcMaxValueFromMaxPos();
 			}
 		}
 
@@ -399,6 +441,7 @@ public class Slider : Control
 		return leftPosX;
 	}
 
+	// TODO: remove if we dont use this
 	private double CalcValueFromPos(double posX)
 	{
 		var halfWidth = this.maxThumb.HalfWidth;
@@ -412,6 +455,7 @@ public class Slider : Control
 
 	public override void Render(DrawingContext ctx)
 	{
+		Console.WriteLine("RENDER");
 		this.minValueText = new FormattedText(
 			MinValue.ToStringRounded(DecimalPlaces),
 			CultureInfo.CurrentCulture,
@@ -462,30 +506,34 @@ public class Slider : Control
 		if (isOverlapping)
 		{
 			var overlapAmount = this.minThumb.Bounds.Intersect(this.maxThumb.Bounds).Width;
-
-			var isSpaceToLeftOfMinThumb = this.minThumb.Left > 0;
-			var isSpaceToRightOfMaxThumb = this.maxThumb.Right < Bounds.Width;
-			var noSpaceBetween = this.minThumb.Right > this.maxThumb.Left && this.minThumb.Left < this.maxThumb.Left;
-
-			if (this.minThumb.Draggable)
-			{
-				// Push the max thumb to the right
-				this.maxThumb.SetLeft(this.minThumb.Right);
-			}
-			else if (this.maxThumb.Draggable)
-			{
-				// Push the min thumb to the left
-				this.minThumb.SetRight(this.maxThumb.Left);
-			}
-
 			var notDraggingAnyThumbs = !this.minThumb.Draggable && !this.maxThumb.Draggable;
 
-			if (notDraggingAnyThumbs && isSpaceToLeftOfMinThumb && isSpaceToRightOfMaxThumb && noSpaceBetween)
+			if (notDraggingAnyThumbs)
 			{
-				var overlapHalf = overlapAmount / 2;
+				var isSpaceToLeftOfMinThumb = this.minThumb.Left > 0;
+				var isSpaceToRightOfMaxThumb = this.maxThumb.Right < Bounds.Width;
+				var noSpaceBetween = this.minThumb.Right > this.maxThumb.Left && this.minThumb.Left < this.maxThumb.Left;
 
-				this.minThumb.SetRight(this.minThumb.Right - overlapHalf);
-				this.maxThumb.SetLeft(this.maxThumb.Left + overlapHalf);
+				if (isSpaceToLeftOfMinThumb && isSpaceToRightOfMaxThumb && noSpaceBetween)
+				{
+					var overlapHalf = overlapAmount / 2;
+
+					this.minThumb.SetRight(this.minThumb.Right - overlapHalf);
+					this.maxThumb.SetLeft(this.maxThumb.Left + overlapHalf);
+				}
+			}
+			else
+			{
+				if (this.minThumb.Draggable)
+				{
+					// Push the max thumb to the right
+					this.maxThumb.SetLeft(this.minThumb.Right);
+				}
+				else if (this.maxThumb.Draggable)
+				{
+					// Push the min thumb to the left
+					this.minThumb.SetRight(this.maxThumb.Left);
+				}
 			}
 		}
 

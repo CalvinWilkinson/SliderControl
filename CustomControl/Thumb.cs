@@ -26,6 +26,8 @@ public struct Thumb
 
 	public double HalfWidth => Bounds.Width / 2;
 
+	public double CenterX => Bounds.Center.X;
+
 	public double Top => Bounds.Top;
 
 	public Color Color { get; set; } = Colors.White;

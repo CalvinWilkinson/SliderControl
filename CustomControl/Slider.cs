@@ -39,14 +39,6 @@ public class Slider : Control
 				}
 
 				return newValue;
-
-				var minThumbMaxValue = slider.CalcValueFromPos(slider.maxThumb.Left - slider.minThumb.HalfWidth);
-
-				Console.WriteLine(minThumbMaxValue);
-
-				return newValue > minThumbMaxValue
-					? minThumbMaxValue
-					: newValue;
 			});
 
 	public static readonly StyledProperty<double> MaxValueProperty =
@@ -62,14 +54,6 @@ public class Slider : Control
 				}
 
 				return newValue;
-
-				var minThumbMaxValue = slider.CalcValueFromPos(slider.maxThumb.Left - slider.minThumb.HalfWidth);
-
-				Console.WriteLine(minThumbMaxValue);
-
-				return newValue > minThumbMaxValue
-					? minThumbMaxValue
-					: newValue;
 			});
 
 	public static readonly StyledProperty<uint> DecimalPlacesProperty =
@@ -252,7 +236,6 @@ public class Slider : Control
 
 	protected override void OnLoaded(RoutedEventArgs e)
 	{
-		Console.WriteLine("LOADED");
 		base.Width = 200;
 		base.Height = DefaultHeight;
 
@@ -281,9 +264,14 @@ public class Slider : Control
 		minThumb.SetCenterX(minPosX);
 		maxThumb.SetCenterX(maxPosX);
 
-		Width = Width;
-
 		ProcessCollisions();
+
+		var newMinThumbValue = CalcValueFromPos(this.minThumb.CenterX);
+		MinValue = newMinThumbValue;
+
+		var newMaxThumbValue = CalcValueFromPos(this.maxThumb.CenterX);
+		MaxValue = newMaxThumbValue;
+
 		InvalidateVisual();
 
 		if (VisualRoot is TopLevel topLevel)
@@ -455,7 +443,6 @@ public class Slider : Control
 
 	public override void Render(DrawingContext ctx)
 	{
-		Console.WriteLine("RENDER");
 		this.minValueText = new FormattedText(
 			MinValue.ToStringRounded(DecimalPlaces),
 			CultureInfo.CurrentCulture,
@@ -471,8 +458,6 @@ public class Slider : Control
 			Typeface.Default,
 			ValueTextSize,
 			Brushes.Black);
-
-		ProcessCollisions();
 
 		RenderBackground(ctx);
 		RenderSliderTrack(ctx);

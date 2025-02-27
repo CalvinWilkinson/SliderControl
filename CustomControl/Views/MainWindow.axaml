@@ -37,7 +37,7 @@
                           Background="DarkCyan"
                           Margin="0, 25, 0, 0"
                           MinValue="20"
-                          MaxValue="70" />
+                          MaxValue="80" />
         </Border>
 
         <StackPanel Grid.Row="1" Orientation="Horizontal">

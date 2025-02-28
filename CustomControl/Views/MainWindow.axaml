@@ -34,7 +34,6 @@
           Height="{Binding #Root.Height}">
         <Border BorderBrush="White" BorderThickness="1">
             <local:Slider x:Name="Slider" Width="180" Height="100"
-                          Background="DarkCyan"
                           Margin="0, 25, 0, 0"
                           MinValue="20"
                           MaxValue="80" />

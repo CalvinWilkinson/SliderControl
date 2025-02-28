@@ -111,10 +111,9 @@ public class Slider : Control
 	public static readonly StyledProperty<double> TrackThicknessProperty =
 		AvaloniaProperty.Register<Slider, double>( nameof(TrackThickness), defaultValue: 2);
 
-	public static readonly StyledProperty<double> WidthProperty = AvaloniaProperty.Register<Slider, double>(nameof(Width));
-
 	public static readonly StyledProperty<double> WidthProperty = AvaloniaProperty.Register<Slider, double>(
 		nameof(Width),
+		defaultValue: 200,
 		coerce: (obj, newValue) =>
 		{
 			if (obj is not Slider slider)
@@ -122,16 +121,12 @@ public class Slider : Control
 				throw new Exception("The object is not a Slider.");
 			}
 
-			if (slider.skipWidthCoerce)
+			var shouldMoveMaxThumb = slider.maxThumb.Right > newValue;
+
+			if (shouldMoveMaxThumb)
 			{
-				return newValue;
+				slider.maxThumb.SetLeft(newValue - slider.maxThumb.Width);
 			}
-
-			var minWidth = slider.minThumb.Width + slider.maxThumb.Width;
-
-			newValue = newValue < minWidth
-				? minWidth
-				: newValue;
 
 			return newValue;
 		});

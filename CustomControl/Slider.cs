@@ -111,7 +111,7 @@ public class Slider : Control
 	public static readonly StyledProperty<double> TrackThicknessProperty =
 		AvaloniaProperty.Register<Slider, double>( nameof(TrackThickness), defaultValue: 2);
 
-	private bool skipWidthCoerce;
+	public static readonly StyledProperty<double> WidthProperty = AvaloniaProperty.Register<Slider, double>(nameof(Width));
 
 	public static readonly StyledProperty<double> WidthProperty = AvaloniaProperty.Register<Slider, double>(
 		nameof(Width),

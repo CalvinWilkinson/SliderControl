@@ -29,24 +29,23 @@
     <!--     <local:Slider Width="300" Height="100" Background="#1A1A1A"/> -->
     <!-- </StackPanel> -->
 
-    <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="Auto"
+    <Grid RowDefinitions="Auto,Auto" ColumnDefinitions="Auto,Auto,Auto"
           Width="{Binding #Root.Width}"
           Height="{Binding #Root.Height}">
-        <Border BorderBrush="White" BorderThickness="1">
-            <local:Slider x:Name="Slider" Width="180" Height="100"
+        <Button Grid.Row="0" Grid.Column="0" x:Name="Add" Click="Add_OnClick" Background="DarkGray">
+            Add
+        </Button>
+
+        <Border Grid.Row="0" Grid.Column="1" BorderBrush="White" BorderThickness="1">
+            <local:Slider x:Name="Slider" Width="200" Height="100"
                           Margin="0, 25, 0, 0"
-                          MinValue="20"
-                          MaxValue="80" />
+                          MinValue="{Binding #Root.MinValue, Mode=TwoWay}"
+                          MaxValue="{Binding #Root.MaxValue, Mode=TwoWay}" />
         </Border>
 
-        <StackPanel Grid.Row="1" Orientation="Horizontal">
-            <Button x:Name="Add" Click="Add_OnClick" Background="DarkGray">
-                Add
-            </Button>
 
-            <Button x:Name="Sub" Click="Sub_OnClick" Background="DarkGray">
-                Sub
-            </Button>
-        </StackPanel>
+        <Button Grid.Row="0" Grid.Column="2" x:Name="Sub" Click="Sub_OnClick" Background="DarkGray">
+            Sub
+        </Button>
     </Grid>
 </Window>

@@ -264,6 +264,9 @@ public class Slider : Control
 		minThumb.SetCenterX(minPosX);
 		maxThumb.SetCenterX(maxPosX);
 
+		// Execute the coerce value callback for the width property again
+		Width = Width;
+
 		ProcessCollisions();
 
 		var newMinThumbValue = CalcValueFromPos(this.minThumb.CenterX);
@@ -339,6 +342,8 @@ public class Slider : Control
 		this.minThumb.UpdateNew(this.mousePos, this.isLeftMouseDown);
 		this.maxThumb.UpdateNew(this.mousePos, this.isLeftMouseDown);
 
+
+
 		if (this.minThumb.Draggable)
 		{
 			var leftThumbCanMove = this.minThumb.Right < this.maxThumb.Left;
@@ -346,6 +351,7 @@ public class Slider : Control
 
 			if (leftThumbCanMove || rightThumbCanMove)
 			{
+				ProcessCollisions(); // Force adjustments before setting the values for accuracy
 				MinValue = CalcMinValueFromMinPos();
 				MaxValue = CalcMaxValueFromMaxPos();
 			}
@@ -358,6 +364,7 @@ public class Slider : Control
 
 			if (leftThumbCanMove || rightThumbCanMove)
 			{
+				ProcessCollisions(); // Force adjustments before setting the values for accuracy
 				MinValue = CalcMinValueFromMinPos();
 				MaxValue = CalcMaxValueFromMaxPos();
 			}

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Globalization;
 using Avalonia;
 using Avalonia.Controls;
@@ -30,7 +30,6 @@ public class Slider : Control
 			defaultValue: 0,
 			coerce: (obj, newValue) =>
 			{
-				Console.WriteLine("COERCING MIN VALUE");
 				if (obj is not Slider slider)
 				{
 					throw new Exception("The object is not a Slider.");
@@ -45,7 +44,6 @@ public class Slider : Control
 			defaultValue: 100,
 			coerce: (obj, newValue) =>
 			{
-				Console.WriteLine("COERCING MAX VALUE");
 				if (obj is not Slider slider)
 				{
 					throw new Exception("The object is not a Slider.");
@@ -474,6 +472,10 @@ public class Slider : Control
 
 	private void ProcessCollisions()
 	{
+		// Make sure that the width of the control is never less than the width of both the thumbs
+		var minWidth = minThumb.Width + maxThumb.Width;
+		Width = Width < minWidth ? minWidth : Width;
+
 		var minTextWidth = minValueText.Width;
 		var maxTextWidth = maxValueText.Width;
 

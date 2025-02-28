@@ -9,8 +9,6 @@ using Avalonia.Media.Immutable;
 
 namespace CustomControl;
 
-// TODO: Make sure that the width of the control is not less than the combined width of the thumbs
-
 public class Slider : Control
 {
 	private const double DefaultHeight = 35;
